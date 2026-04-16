@@ -25,11 +25,9 @@ dev = [
 [tool.setuptools.packages.find]
 where = ["src"]
 
-[tool.setuptools.dynamic]
-version = { attr = "watchdock_errors.__version__" }
-
 [tool.setuptools_scm]
-write_to = "src/watchdock_errors/_version.py"
+version_config = true
+local_scheme = "no-local-version"
 
 [tool.ruff]
 line-length = 120
