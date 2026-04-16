@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "watchdock-errors"
-version = "0.1.2"
+dynamic = ["version"]
 description = "Application error tracking SDK for the Watchdock platform"
 readme = "README.md"
 requires-python = ">=3.10"
