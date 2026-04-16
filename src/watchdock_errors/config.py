@@ -1,15 +1,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from importlib.metadata import version, PackageNotFoundError
 from typing import Callable
+
+try:
+    from ._version import version as __version__
+except ImportError:
+    __version__ = "0.0.0"
 
 
 def _get_version() -> str:
-    try:
-        return version("watchdock-errors")
-    except PackageNotFoundError:
-        return "0.0.0"
+    return __version__
 
 
 @dataclass

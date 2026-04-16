@@ -20,11 +20,16 @@ import sys
 import logging
 from typing import TYPE_CHECKING
 
+try:
+    from ._version import version as __version__
+except ImportError:
+    __version__ = "0.0.0"
+
 if TYPE_CHECKING:
     from .config import SDKConfig
     from .client import WatchdockClient
 
-__all__ = ["init", "capture_exception", "capture_message", "flush", "close"]
+__all__ = ["init", "capture_exception", "capture_message", "flush", "close", "__version__"]
 
 _client: "WatchdockClient | None" = None
 _config: "SDKConfig | None" = None
