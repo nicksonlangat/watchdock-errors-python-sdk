@@ -26,8 +26,6 @@ dev = [
 where = ["src"]
 
 [tool.setuptools_scm]
-version_config = true
-local_scheme = "no-local-version"
 
 [tool.ruff]
 line-length = 120
