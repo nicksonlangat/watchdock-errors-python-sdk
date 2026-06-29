@@ -74,6 +74,7 @@ def init(
         environment,
         release or "unset",
     )
+    _send_init_ping(_config)
 
 
 def capture_exception(exc: BaseException | None = None, request_context: dict | None = None) -> None:
@@ -130,3 +131,25 @@ def close() -> None:
         _client.close()
     _client = None
     _config = None
+
+
+def _send_init_ping(config: "SDKConfig") -> None:
+    """Fire-and-forget POST to register SDK initialisation with the platform."""
+    import threading
+    import requests
+
+    def _ping() -> None:
+        try:
+            requests.post(
+                f"{config.endpoint.rstrip('/')}/api/v1/errors/sdk-init/",
+                json={"sdk_version": config.sdk_version, "environment": config.environment},
+                headers={
+                    "Authorization": f"Bearer {config.api_key}",
+                    "Content-Type": "application/json",
+                },
+                timeout=3.0,
+            )
+        except Exception:
+            pass  # Never block or raise on init ping failure
+
+    threading.Thread(target=_ping, daemon=True, name="watchdock-init-ping").start()
