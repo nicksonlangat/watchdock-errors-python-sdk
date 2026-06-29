@@ -139,6 +139,8 @@ def _send_init_ping(config: "SDKConfig") -> None:
     import requests
 
     def _ping() -> None:
+        import time
+        time.sleep(5)  # Wait for the server to be ready before pinging
         try:
             requests.post(
                 f"{config.endpoint.rstrip('/')}/api/v1/errors/sdk-init/",
