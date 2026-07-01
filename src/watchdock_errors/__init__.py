@@ -105,14 +105,14 @@ def capture_exception(exc: BaseException | None = None, request_context: dict | 
         logger.debug("watchdock_errors: event dropped by before_send hook")
 
 
-def capture_message(message: str, request_context: dict | None = None) -> None:
+def capture_message(message: str, level: str = "info", request_context: dict | None = None) -> None:
     """Capture an arbitrary message string and send it to Watchdock."""
     if _client is None or _config is None:
         return
 
     from .event import build_event
 
-    event = build_event(None, _config, message=message, request_context=request_context)
+    event = build_event(None, _config, message=message, level=level, request_context=request_context)
     if event is not None:
         logger.info("watchdock_errors: capturing message — %s", message)
         _client.capture(event)

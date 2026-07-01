@@ -13,6 +13,7 @@ def build_event(
     exc: BaseException | None,
     config: SDKConfig,
     message: str | None = None,
+    level: str | None = None,
     request_context: dict | None = None,
 ) -> dict | None:
     """
@@ -21,6 +22,9 @@ def build_event(
     Returns None if the event should be dropped (e.g., before_send returned None).
     """
     now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+    if level is None:
+        level = "error" if exc is not None else "info"
 
     if exc is not None:
         exception_data = {
@@ -41,6 +45,7 @@ def build_event(
         "project_key": config.api_key,
         "timestamp": now,
         "environment": config.environment,
+        "level": level,
         "title": title,
         "sdk": {
             "name": config.sdk_name,

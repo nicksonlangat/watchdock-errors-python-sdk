@@ -30,6 +30,24 @@ def test_build_event_from_message(config):
     assert event is not None
     assert event["exception"]["message"] == "Stripe webhook failed"
     assert event["exception"]["type"] == "Message"
+    assert event["level"] == "info"
+
+
+def test_build_event_level_override(config):
+    event = build_event(None, config, message="disk almost full", level="warning")
+
+    assert event is not None
+    assert event["level"] == "warning"
+
+
+def test_build_event_exception_default_level(config):
+    try:
+        raise ValueError("bad")
+    except ValueError as exc:
+        event = build_event(exc, config)
+
+    assert event is not None
+    assert event["level"] == "error"
 
 
 def test_before_send_can_drop_event(config):
