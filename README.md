@@ -68,7 +68,18 @@ watchdock_errors.capture_exception(exc)
 
 # Capture a message
 watchdock_errors.capture_message("Stripe webhook signature invalid")
+
+# Capture a message with a custom level
+watchdock_errors.capture_message("Queue depth high", level="warning")
 ```
+
+### Event levels
+
+Every event carries a `level`. Exceptions default to `"error"`; messages default to `"info"` unless you pass `level` explicitly to `capture_message`.
+
+## SDK initialization
+
+When `init()` is called, the SDK sends a one-time, fire-and-forget ping to the platform (with the SDK version and environment) to register that it started up. This never blocks application startup and any failure is silently ignored.
 
 ## PII scrubbing
 
