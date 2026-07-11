@@ -77,6 +77,17 @@ watchdock_errors.capture_message("Queue depth high", level="warning")
 
 Every event carries a `level`. Exceptions default to `"error"`; messages default to `"info"` unless you pass `level` explicitly to `capture_message`.
 
+## Correlating with nginx requests
+
+If your app is behind nginx and you've added `$request_id` to your access log format (see the [nginx log collection docs](https://watchdock.cc/docs/nginx-log-collection)) and forwarded it to your app via `proxy_set_header X-Request-Id $request_id;`, this SDK automatically reads that header off every captured request and attaches it as `trace_id` — no code changes needed. This lets WatchDock link a failed request in your nginx access logs directly to the exception it produced.
+
+You can also pass `trace_id` explicitly, which takes priority over the auto-extracted value:
+
+```python
+watchdock_errors.capture_exception(exc, trace_id=my_trace_id)
+watchdock_errors.capture_message("Queue depth high", level="warning", trace_id=my_trace_id)
+```
+
 ## SDK initialization
 
 When `init()` is called, the SDK sends a one-time, fire-and-forget ping to the platform (with the SDK version and environment) to register that it started up. This never blocks application startup and any failure is silently ignored.
