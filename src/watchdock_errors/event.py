@@ -4,7 +4,7 @@ import datetime
 import logging
 
 from .config import SDKConfig
-from .utils import extract_stacktrace, get_server_info
+from .utils import extract_stacktrace, extract_trace_id, get_server_info
 
 logger = logging.getLogger("watchdock_errors")
 
@@ -15,6 +15,7 @@ def build_event(
     message: str | None = None,
     level: str | None = None,
     request_context: dict | None = None,
+    trace_id: str | None = None,
 ) -> dict | None:
     """
     Build a Watchdock error event payload.
@@ -60,6 +61,12 @@ def build_event(
 
     if config.server_name:
         event["server"]["server_name"] = config.server_name
+
+    resolved_trace_id = trace_id or (
+        extract_trace_id(request_context.get("request", {}).get("headers", {})) if request_context else None
+    )
+    if resolved_trace_id:
+        event["trace_id"] = resolved_trace_id
 
     if request_context:
         if config.send_pii:

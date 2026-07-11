@@ -77,13 +77,21 @@ def init(
     _send_init_ping(_config)
 
 
-def capture_exception(exc: BaseException | None = None, request_context: dict | None = None) -> None:
+def capture_exception(
+    exc: BaseException | None = None,
+    request_context: dict | None = None,
+    trace_id: str | None = None,
+) -> None:
     """
     Capture an exception and send it to Watchdock.
 
     If ``exc`` is None the current exception from ``sys.exc_info()`` is used.
     Safe to call outside of an except block — does nothing if there is no
     active exception and ``exc`` is not provided.
+
+    ``trace_id`` correlates this event with the originating nginx request
+    (e.g. ``X-Request-Id``) and takes priority over any value auto-extracted
+    from ``request_context``'s headers if both are present.
     """
     if _client is None or _config is None:
         return
@@ -97,7 +105,7 @@ def capture_exception(exc: BaseException | None = None, request_context: dict | 
 
     from .event import build_event
 
-    event = build_event(exc, _config, request_context=request_context)
+    event = build_event(exc, _config, request_context=request_context, trace_id=trace_id)
     if event is not None:
         logger.info("watchdock_errors: capturing exception — %s: %s", type(exc).__name__, exc)
         _client.capture(event)
@@ -105,14 +113,27 @@ def capture_exception(exc: BaseException | None = None, request_context: dict | 
         logger.debug("watchdock_errors: event dropped by before_send hook")
 
 
-def capture_message(message: str, level: str = "info", request_context: dict | None = None) -> None:
-    """Capture an arbitrary message string and send it to Watchdock."""
+def capture_message(
+    message: str,
+    level: str = "info",
+    request_context: dict | None = None,
+    trace_id: str | None = None,
+) -> None:
+    """
+    Capture an arbitrary message string and send it to Watchdock.
+
+    ``trace_id`` correlates this event with the originating nginx request
+    (e.g. ``X-Request-Id``) and takes priority over any value auto-extracted
+    from ``request_context``'s headers if both are present.
+    """
     if _client is None or _config is None:
         return
 
     from .event import build_event
 
-    event = build_event(None, _config, message=message, level=level, request_context=request_context)
+    event = build_event(
+        None, _config, message=message, level=level, request_context=request_context, trace_id=trace_id
+    )
     if event is not None:
         logger.info("watchdock_errors: capturing message — %s", message)
         _client.capture(event)

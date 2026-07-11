@@ -94,3 +94,54 @@ def test_pii_headers_scrubbed_by_default(config):
 
     assert "Authorization" not in event["request"]["headers"]
     assert event["request"]["headers"]["Content-Type"] == "application/json"
+
+
+def test_trace_id_extracted_from_x_request_id_header(config):
+    req_ctx = {
+        "request": {
+            "method": "GET",
+            "url": "/checkout/",
+            "headers": {"X-Request-Id": "abc123"},
+        }
+    }
+
+    try:
+        raise ValueError("x")
+    except ValueError as exc:
+        event = build_event(exc, config, request_context=req_ctx)
+
+    assert event["trace_id"] == "abc123"
+
+
+def test_trace_id_falls_back_to_traceparent_header(config):
+    req_ctx = {
+        "request": {
+            "headers": {"traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"},
+        }
+    }
+
+    event = build_event(None, config, message="hi", request_context=req_ctx)
+
+    assert event["trace_id"] == "4bf92f3577b34da6a3ce929d0e0e4736"
+
+
+def test_trace_id_absent_when_no_matching_header(config):
+    req_ctx = {"request": {"headers": {"Content-Type": "application/json"}}}
+
+    event = build_event(None, config, message="hi", request_context=req_ctx)
+
+    assert "trace_id" not in event
+
+
+def test_explicit_trace_id_wins_over_header_extraction(config):
+    req_ctx = {"request": {"headers": {"X-Request-Id": "from-header"}}}
+
+    event = build_event(None, config, message="hi", request_context=req_ctx, trace_id="explicit-id")
+
+    assert event["trace_id"] == "explicit-id"
+
+
+def test_explicit_trace_id_works_without_request_context(config):
+    event = build_event(None, config, message="hi", trace_id="explicit-id")
+
+    assert event["trace_id"] == "explicit-id"
