@@ -3,14 +3,18 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Callable
 
-try:
-    from ._version import version as __version__
-except ImportError:
-    __version__ = "0.0.0"
-
 
 def _get_version() -> str:
-    return __version__
+    try:
+        from importlib.metadata import version
+        return version("watchdock-errors")
+    except Exception:
+        pass
+    try:
+        from ._version import version as _v
+        return _v
+    except ImportError:
+        return "0.0.0"
 
 
 @dataclass
