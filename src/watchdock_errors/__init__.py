@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from .config import SDKConfig
     from .client import WatchdockClient
 
-__all__ = ["init", "capture_exception", "capture_message", "flush", "close", "__version__"]
+__all__ = ["init", "capture_exception", "capture_message", "flush", "close", "get_config", "__version__"]
 
 _client: "WatchdockClient | None" = None
 _config: "SDKConfig | None" = None
@@ -137,6 +137,15 @@ def capture_message(
     if event is not None:
         logger.info("watchdock_errors: capturing message — %s", message)
         _client.capture(event)
+
+
+def get_config() -> "SDKConfig | None":
+    """Return the active SDKConfig, or None if init() has not been called.
+
+    Intended for integrations (e.g. celery.py) that need direct access to
+    api_key/endpoint/etc. rather than going through capture_exception/message.
+    """
+    return _config
 
 
 def flush(timeout: float = 2.0) -> None:

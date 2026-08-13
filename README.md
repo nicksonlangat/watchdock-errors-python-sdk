@@ -13,6 +13,7 @@ With framework extras:
 ```bash
 pip install "watchdock-errors[django]"
 pip install "watchdock-errors[fastapi]"
+pip install "watchdock-errors[celery]"
 ```
 
 ## Quickstart
@@ -53,6 +54,27 @@ from watchdock_errors.integrations.fastapi import setup_watchdock
 
 setup_watchdock(app)
 ```
+
+### Celery
+
+```python
+from celery import Celery
+from watchdock_errors.integrations.celery import register
+
+app = Celery("myproject")
+app.config_from_object("django.conf:settings", namespace="CELERY")
+app.autodiscover_tasks()
+
+register(app)
+```
+
+Call `register(app)` once, after `autodiscover_tasks()`. It reports, automatically:
+
+- **Task registry** — every registered task (and, for periodic tasks, their beat schedule), once per worker on startup.
+- **Failures, retries, and revocations** — via `task_failure`, `task_retry`, and `task_revoked`. Successful runs are not reported.
+- **Heartbeats for periodic tasks** — a lightweight ping on every run of a beat-scheduled task, so Watchdock can flag one that's gone silent. Non-periodic tasks are never pinged.
+
+`watchdock_errors.init()` must be called before these signals fire — if you're on Django, a `worker_process_init` handler that calls `init()` covers every forked worker process.
 
 ## Manual capture
 
