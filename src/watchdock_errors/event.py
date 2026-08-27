@@ -4,9 +4,16 @@ import datetime
 import logging
 
 from .config import SDKConfig
-from .utils import extract_stacktrace, extract_trace_id, get_server_info
+from .utils import extract_stacktrace, extract_trace_id, get_server_info, sanitize_url_and_query_params
 
 logger = logging.getLogger("watchdock_errors")
+
+#: Lowercased for comparison -- header casing isn't consistent across integrations (e.g.
+#: Django's request.headers is Title-Case, but raw ASGI scope headers used by the FastAPI
+#: integration are always lowercase per spec), so matching by exact Title-Case key silently
+#: let Authorization/Cookie/X-Api-Key through unscrubbed for any integration that doesn't
+#: happen to produce Django's casing.
+_SENSITIVE_HEADER_NAMES = {"authorization", "cookie", "set-cookie", "x-api-key"}
 
 
 def build_event(
@@ -75,10 +82,19 @@ def build_event(
         else:
             req = dict(request_context.get("request", {}))
             req.pop("body", None)
-            headers = dict(req.get("headers", {}))
-            for sensitive in ("Authorization", "Cookie", "X-Api-Key"):
-                headers.pop(sensitive, None)
-            req["headers"] = headers
+            req["headers"] = {
+                key: value
+                for key, value in req.get("headers", {}).items()
+                if key.lower() not in _SENSITIVE_HEADER_NAMES
+            }
+            if "url" in req or "query_params" in req:
+                sanitized_url, sanitized_params = sanitize_url_and_query_params(
+                    req.get("url", ""), req.get("query_params")
+                )
+                if "url" in req:
+                    req["url"] = sanitized_url
+                if "query_params" in req:
+                    req["query_params"] = sanitized_params
             event["request"] = req
 
     if config.before_send is not None:
