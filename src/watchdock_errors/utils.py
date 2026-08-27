@@ -65,6 +65,61 @@ def get_server_info() -> dict:
     }
 
 
+#: Substring match (case-insensitive) against query-param names. Deliberately broad —
+#: over-redacting an innocuous param (e.g. "sort_key") is a much smaller cost than
+#: leaking a reset token, session id, or api key sitting in a URL.
+_SENSITIVE_QUERY_PARAM_SUBSTRINGS = (
+    "token",
+    "secret",
+    "password",
+    "passwd",
+    "pwd",
+    "auth",
+    "key",
+    "session",
+    "credential",
+    "otp",
+    "pin",
+    "ssn",
+)
+
+
+def _is_sensitive_param(name: str) -> bool:
+    lowered = name.lower()
+    return any(substring in lowered for substring in _SENSITIVE_QUERY_PARAM_SUBSTRINGS)
+
+
+def sanitize_url_and_query_params(url: str, query_params: dict | None) -> tuple[str, dict]:
+    """Redact sensitive query-param values from both ``query_params`` and ``url`` itself.
+
+    Headers and the request body get their own scrubbing, but a URL is often the most
+    PII-dense thing captured by default -- password-reset tokens, magic-link codes,
+    ``?api_key=...``, session ids -- and previously passed through untouched even with
+    PII collection off. Rebuilds the url's query string from the redacted params rather
+    than just deleting it, so the two never disagree and the path (still useful for
+    grouping/debugging) is preserved.
+    """
+    from urllib.parse import urlencode, urlsplit, urlunsplit
+
+    sanitized_params: dict = {}
+    for key, value in (query_params or {}).items():
+        if _is_sensitive_param(key):
+            sanitized_params[key] = ["[REDACTED]"] * len(value) if isinstance(value, list) else "[REDACTED]"
+        else:
+            sanitized_params[key] = value
+
+    if not url:
+        return url, sanitized_params
+
+    parts = urlsplit(url)
+    if parts.query:
+        # doseq=True so list-valued params (e.g. Django QueryDict-style) re-encode correctly.
+        new_query = urlencode(sanitized_params, doseq=True)
+        url = urlunsplit((parts.scheme, parts.netloc, parts.path, new_query, parts.fragment))
+
+    return url, sanitized_params
+
+
 def extract_trace_id(headers: dict | None) -> str | None:
     """
     Pull a correlation ID off incoming request headers so this event can be

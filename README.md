@@ -116,7 +116,7 @@ When `init()` is called, the SDK sends a one-time, fire-and-forget ping to the p
 
 ## PII scrubbing
 
-By default, `Authorization`, `Cookie`, and `X-Api-Key` headers are stripped and the request body is not sent. Set `send_pii=True` to disable scrubbing.
+By default, `Authorization`, `Cookie`, `Set-Cookie`, and `X-Api-Key` headers are stripped, the request body is not sent, and sensitive-looking query-param values (names containing `token`, `secret`, `password`, `auth`, `key`, `session`, `credential`, `otp`, `pin`, `ssn`, etc.) are redacted in both `query_params` and the captured `url` itself. Set `send_pii=True` to disable scrubbing.
 
 Use the `before_send` hook for custom scrubbing:
 
