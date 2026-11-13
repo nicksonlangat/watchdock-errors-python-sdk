@@ -39,6 +39,7 @@ from __future__ import annotations
 
 import logging
 import threading
+from datetime import timedelta
 from typing import TYPE_CHECKING
 
 import requests
@@ -230,7 +231,11 @@ def _serialize_schedule(entry) -> dict | None:
             "month_of_year": schedule._orig_month_of_year,
         }
 
-    seconds = getattr(schedule, "seconds", schedule)  # celery.schedules.schedule or plain number
+    # timedelta.seconds is only the seconds component (a 1-day timedelta has 0), so use the total.
+    if isinstance(schedule, timedelta):
+        seconds = schedule.total_seconds()
+    else:
+        seconds = getattr(schedule, "seconds", schedule)  # celery.schedules.schedule or plain number
     try:
         return {"type": "interval", "every_seconds": float(seconds)}
     except (TypeError, ValueError):
